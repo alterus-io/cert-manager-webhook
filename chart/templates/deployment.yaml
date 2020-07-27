@@ -25,8 +25,13 @@ spec:
               value: "/etc/webhook/certs/tls.crt"
             - name: "WEBHOOK_KEY"
               value: "/etc/webhook/certs/tls.key"
+            {{ if .Values.namespaceSelector != "" }}
             - name: "NAMESPACE_SELECTOR"
               value: {{ .Values.namespaceSelector | quote }}
+            {{ else }}
+            - name: "NAMESPACE_SELECTOR"
+              value: "true"
+            {{ end }}
           volumeMounts:
             - name: webhook-certs
               mountPath: /etc/webhook/certs
