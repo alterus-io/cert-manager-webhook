@@ -87,7 +87,6 @@ func admissionRequired(ignoredList []string, metadata *metav1.ObjectMeta) bool {
 	// skip special kubernetes system namespaces
 	for _, namespace := range ignoredList {
 		if metadata.Namespace == namespace {
-			glog.Infof("Skip for %v for it's in special namespace:%v", metadata.Name, metadata.Namespace)
 			return false
 		}
 	}
@@ -152,11 +151,7 @@ func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.Admissi
 	var (
 		availableAnnotations map[string]string
 		objectMeta                            *metav1.ObjectMeta
-		resourceNamespace, resourceName       string
 	)
-
-	glog.Infof("AdmissionReview for Kind=%v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%v",
-		req.Kind, req.Namespace, req.Name, resourceName, req.UID, req.Operation, req.UserInfo)
 
 	var secret corev1.Secret
 	if err := json.Unmarshal(req.Object.Raw, &secret); err != nil {
@@ -167,10 +162,11 @@ func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.Admissi
 			},
 		}
 	}
-	resourceName, resourceNamespace, objectMeta = secret.Name, secret.Namespace, &secret.ObjectMeta
+
+	var secretType = &secret.Type
+	objectMeta = &secret.ObjectMeta
 
 	if !mutationRequired(ignoredNamespaces, objectMeta) {
-		glog.Infof("Skipping validation for %s/%s due to policy check", resourceNamespace, resourceName)
 		return &v1beta1.AdmissionResponse{
 			Allowed: true,
 		}
@@ -186,7 +182,6 @@ func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.Admissi
 		}
 	}
 
-	glog.Infof("AdmissionResponse: patch=%v\n", string(patchBytes))
 	return &v1beta1.AdmissionResponse{
 		Allowed: true,
 		Patch:   patchBytes,

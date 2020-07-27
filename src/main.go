@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/golang/glog"
+	"flag"
 )
 
 func getEnv(key, fallback string) string {
@@ -20,10 +21,14 @@ func getEnv(key, fallback string) string {
 }
 
 func main() {
+	flag.Parse()
+
 	// get command line parameters
 	webhookPort := getEnv("WEBHOOK_PORT", "443")
 	certFile := getEnv("WEBHOOK_CERT", "/etc/webhook/certs/tls.crt")
 	keyFile := getEnv("WEBHOOK_KEY", "/etc/webhook/certs/tls.key")
+
+
 
 	pair, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
