@@ -65,14 +65,3 @@ Create the name of the service account to use
 {{- define "webhook.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
-
-{{/*
-Generate certificates for webhook
-*/}}
-{{- define "custom-metrics.gen-certs" -}}
-{{- $altNames := list ( printf "%s.%s" (include "webhook.name" .) .Release.Namespace ) ( printf "%s.%s.svc" (include "webhook.name" .) .Release.Namespace ) -}}
-{{- $ca := genCA "custom-metrics-ca" 365 -}}
-{{- $cert := genSignedCert ( include "webhook.name" . ) nil $altNames 365 $ca -}}
-tls.crt: {{ $cert.Cert | b64enc }}
-tls.key: {{ $cert.Key | b64enc }}
-{{- end -}}

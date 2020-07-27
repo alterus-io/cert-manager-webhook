@@ -1,0 +1,39 @@
+{{- $altNames := list ( printf "%s.%s" (include "webhook.name" .) .Release.Namespace ) ( printf "%s.%s.svc" (include "webhook.name" .) .Release.Namespace ) -}}
+{{- $ca := genCA "webhook-ca" 365 -}}
+{{- $cert := genSignedCert ( include "webhook.name" . ) nil $altNames 365 $ca -}}
+
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "chart.fullname" . }}-webhook
+  labels:
+    app: {{ include "chart.fullname" . }}
+webhooks:
+  - name: cert-webhook.alterus.io
+    clientConfig:
+      service:
+        name: {{ include "chart.fullname" . }}-svc
+        path: "/mutate"
+      caBundle: {{ b64enc $ca.Cert }}
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["secrets"]
+        scope: "*"
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: {{ template "webhook.name" . }}-certs
+  labels:
+    app: {{ template "webhook.name" . }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+data:
+  tls.crt: {{ b64enc $cert.Cert }}
+  tls.key: {{ b64enc $cert.Key }}
