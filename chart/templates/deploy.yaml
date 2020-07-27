@@ -31,4 +31,4 @@ spec:
       volumes:
         - name: webhook-certs
           secret:
-            secretName: {{ template "webhook.name" . }}-certs
+            secretName: {{ template "webhook.name" . }}-secret-certs

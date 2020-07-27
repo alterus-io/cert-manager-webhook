@@ -27,7 +27,7 @@ apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
-  name: {{ template "webhook.name" . }}-certs
+  name: {{ template "webhook.name" . }}-secret-certs
   labels:
     app: {{ template "webhook.name" . }}
     heritage: {{ .Release.Service }}
