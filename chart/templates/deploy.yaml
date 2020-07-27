@@ -19,8 +19,8 @@ spec:
           image: {{ .Values.image.name }}:{{ .Values.image.tag }}
           imagePullPolicy: Always
           args:
-            - -tlsCertFile=/etc/webhook/certs/cert.pem
-            - -tlsKeyFile=/etc/webhook/certs/key.pem
+            - -tlsCertFile=/etc/webhook/certs/tls.crt
+            - -tlsKeyFile=/etc/webhook/certs/tls.key
             - -alsologtostderr
             - -v=4
             - 2>&1
