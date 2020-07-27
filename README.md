@@ -51,4 +51,36 @@ helm install -n cert-manager \
 
 ### How to Test
 
-Simply create a certificate and check your other namespaces. The generated secret should be recreated in all.
+Simply create a certificate and check your other namespaces. The generated secret should be recreated.
+
+For instance, creating this issuer/certificate in the `cert-manager` namespace:
+
+```yaml
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: selfsigned-issuer
+  namespace: cert-manager
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: foobar-wildcard
+  namespace: cert-manager
+  annotations:
+    foo: bar
+  labels:
+    far: bat
+spec:
+  secretName: foobar-wildcard
+  dnsNames:
+  - "*.example.com"
+  issuerRef:
+    name: selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
+```
+
+
