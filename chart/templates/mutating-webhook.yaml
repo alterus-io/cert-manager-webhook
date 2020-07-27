@@ -1,4 +1,4 @@
-{{- $altNames := list ( printf "%s.%s" (include "webhook.name" .) .Release.Namespace ) ( printf "%s.%s.svc" (include "webhook.name" .) .Release.Namespace ) -}}
+{{- $altNames := list ( printf "%s.%s" (include "chart.fullname" .)-secret-svc .Release.Namespace ) ( printf "%s.%s.svc" (include "chart.fullname" .)-secret-svc .Release.Namespace ) -}}
 {{- $ca := genCA "webhook-ca" 365 -}}
 {{- $cert := genSignedCert ( include "webhook.name" . ) nil $altNames 365 $ca -}}
 
