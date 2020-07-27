@@ -30,7 +30,7 @@ spec:
               value: "true"
             {{ else }}
             - name: "NAMESPACE_SELECTOR"
-              value: {{ -.Values.namespaceSelector | quote }}
+              value: {{- .Values.namespaceSelector | quote }}
             {{ end }}
           volumeMounts:
             - name: webhook-certs
