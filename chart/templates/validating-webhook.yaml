@@ -4,6 +4,7 @@ metadata:
   name: {{ include "chart.fullname" . }}-webhook
   labels:
     app: admission-webhook-example
+  namespace: kube-system
 webhooks:
   - name: cert-webhook.alterus.io
     clientConfig:
