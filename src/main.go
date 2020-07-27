@@ -8,9 +8,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/golang/glog"
 	"flag"
+	"log"
 )
 
 func getEnv(key, fallback string) string {
@@ -28,11 +27,9 @@ func main() {
 	certFile := getEnv("WEBHOOK_CERT", "/etc/webhook/certs/tls.crt")
 	keyFile := getEnv("WEBHOOK_KEY", "/etc/webhook/certs/tls.key")
 
-
-
 	pair, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		glog.Errorf("Failed to load key pair: %v", err)
+		log.Printf("Failed to load key pair: %v", err)
 	}
 
 	whsvr := &WebhookServer{
@@ -50,17 +47,17 @@ func main() {
 	// start webhook server in new routine
 	go func() {
 		if err := whsvr.server.ListenAndServeTLS("", ""); err != nil {
-			glog.Errorf("Failed to listen and serve webhook server: %v", err)
+			log.Printf("Failed to listen and serve webhook server: %v", err)
 		}
 	}()
 
-	glog.Info("Server started")
+	log.Print("Server started")
 
 	// listening OS shutdown singal
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan
 
-	glog.Infof("Got OS shutdown signal, shutting down webhook server gracefully...")
+	log.Print("Got OS shutdown signal, shutting down webhook server gracefully...")
 	whsvr.server.Shutdown(context.Background())
 }

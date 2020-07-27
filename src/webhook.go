@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"github.com/golang/glog"
 	"k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"log"
 )
 
 var (
@@ -83,7 +83,7 @@ func init() {
 	_ = corev1.AddToScheme(runtimeScheme)
 }
 
-func admissionRequired(ignoredList []string, metadata *metav1.ObjectMeta) bool {
+func admissionRequired(ignoredList []string, metadata *metav1.ObjectMeta, secretType corev1.SecretType) bool {
 	// skip special kubernetes system namespaces
 	for _, namespace := range ignoredList {
 		if metadata.Namespace == namespace {
@@ -91,11 +91,15 @@ func admissionRequired(ignoredList []string, metadata *metav1.ObjectMeta) bool {
 		}
 	}
 
+	if secretType != "kubernetes.io/tls" {
+		return false
+	}
+
 	return true
 }
 
-func mutationRequired(ignoredList []string, metadata *metav1.ObjectMeta) bool {
-	required := admissionRequired(ignoredList, metadata)
+func mutationRequired(ignoredList []string, metadata *metav1.ObjectMeta, secretType corev1.SecretType) bool {
+	required := admissionRequired(ignoredList, metadata, secretType)
 	annotations := metadata.GetAnnotations()
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -104,7 +108,7 @@ func mutationRequired(ignoredList []string, metadata *metav1.ObjectMeta) bool {
 	if required {
 		if _, cm := annotations[certManagerAnnotationKey]; cm {
 			if _, origin := annotations[originAnnotationKey]; origin {
-				glog.Info("Secret contains origin annotation. Not original. Skipping")
+				log.Print("Secret contains origin annotation. Not original. Skipping")
 				return false
 			}
 			return true
@@ -151,11 +155,12 @@ func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.Admissi
 	var (
 		availableAnnotations map[string]string
 		objectMeta                            *metav1.ObjectMeta
+		secretType	corev1.SecretType
 	)
 
 	var secret corev1.Secret
 	if err := json.Unmarshal(req.Object.Raw, &secret); err != nil {
-		glog.Errorf("Could not unmarshal raw object: %v", err)
+		log.Printf("Could not unmarshal raw object: %v", err)
 		return &v1beta1.AdmissionResponse{
 			Result: &metav1.Status{
 				Message: err.Error(),
@@ -163,14 +168,16 @@ func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.Admissi
 		}
 	}
 
-	var secretType = &secret.Type
+	secretType = secret.Type
 	objectMeta = &secret.ObjectMeta
 
-	if !mutationRequired(ignoredNamespaces, objectMeta) {
+	if !mutationRequired(ignoredNamespaces, objectMeta, secretType) {
 		return &v1beta1.AdmissionResponse{
 			Allowed: true,
 		}
 	}
+
+	availableAnnotations = objectMeta.GetAnnotations()
 
 	annotations := map[string]string{syncAnnotationKey: "true"}
 	patchBytes, err := createPatch(availableAnnotations, annotations)
@@ -201,7 +208,7 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if len(body) == 0 {
-		glog.Error("empty body")
+		log.Print("empty body")
 		http.Error(w, "empty body", http.StatusBadRequest)
 		return
 	}
@@ -209,7 +216,7 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 	// verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
-		glog.Errorf("Content-Type=%s, expect application/json", contentType)
+		log.Printf("Content-Type=%s, expect application/json", contentType)
 		http.Error(w, "invalid Content-Type, expect `application/json`", http.StatusUnsupportedMediaType)
 		return
 	}
@@ -217,14 +224,13 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 	var admissionResponse *v1beta1.AdmissionResponse
 	ar := v1beta1.AdmissionReview{}
 	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
-		glog.Errorf("Can't decode body: %v", err)
+		log.Printf("Can't decode body: %v", err)
 		admissionResponse = &v1beta1.AdmissionResponse{
 			Result: &metav1.Status{
 				Message: err.Error(),
 			},
 		}
 	} else {
-		fmt.Println(r.URL.Path)
 		if r.URL.Path == "/mutate" {
 			admissionResponse = whsvr.mutate(&ar)
 		}
@@ -240,12 +246,12 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(admissionReview)
 	if err != nil {
-		glog.Errorf("Can't encode response: %v", err)
+		log.Printf("Can't encode response: %v", err)
 		http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
 	}
-	glog.Infof("Ready to write reponse ...")
+
 	if _, err := w.Write(resp); err != nil {
-		glog.Errorf("Can't write response: %v", err)
+		log.Printf("Can't write response: %v", err)
 		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
 	}
 }
