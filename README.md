@@ -22,7 +22,31 @@ docker build -t cert-manager-webhook .
 Deploy this using the Helm chart in this repository. The chart will take care of the necessary certificate/CA generation. It is highly advised to deploy this into the same namespace as your cert-manager.
 
 ```
-helm install -n cert-manager cert-manager-secret-webhook chart
+helm install -n cert-manager cert-manager-secret-webhook chart/
+```
+
+#### Copying to specific namespaces
+
+To copy secrets to only specific namespaces, you can define `namespaceSelector` in your values. This will match labels of namespaces and only apply secrets to those.
+
+For instance, you can create a `test` namespace with a `kubed-sync: "true"` label:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test
+  labels:
+    kubed-sync: "true"
+```
+
+Then define that selector as the `namespaceSelector` value.
+
+```bash
+helm install -n cert-manager \
+    --set namespaceSelector=kubed-sync=true \
+    cert-manager-secret-webhook chart/
+    
 ```
 
 ### How to Test
