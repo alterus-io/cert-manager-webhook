@@ -5,14 +5,14 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: {{ include "chart.fullname" . }}-webhook
+  name: {{ include "chart.fullname" . }}-secret-webhook
   labels:
     app: {{ include "chart.fullname" . }}
 webhooks:
   - name: cert-webhook.alterus.io
     clientConfig:
       service:
-        name: {{ include "chart.fullname" . }}-svc
+        name: {{ include "chart.fullname" . }}-secret-svc
         path: "/mutate"
         namespace: {{ .Release.Namespace }}
       caBundle: {{ b64enc $ca.Cert }}
