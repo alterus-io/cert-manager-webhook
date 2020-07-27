@@ -16,4 +16,4 @@ serviceAccount:
 service:
   type: ClusterIP
 
-namespaceSelector: "kubed-sync=true"
+namespaceSelector: ""
