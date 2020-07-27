@@ -1,0 +1,18 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "chart.fullname" . }}-webhook
+  labels:
+    app: admission-webhook-example
+webhooks:
+  - name: cert-webhook.alterus.io
+    clientConfig:
+      service:
+        name: {{ include "chart.fullname" . }}-svc
+        path: "/validate"
+      caBundle: ${CA_BUNDLE}
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["secrets"]
