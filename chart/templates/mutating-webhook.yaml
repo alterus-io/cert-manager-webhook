@@ -14,6 +14,7 @@ webhooks:
       service:
         name: {{ include "chart.fullname" . }}-svc
         path: "/mutate"
+        namespace: {{ .Release.Namespace }}
       caBundle: {{ b64enc $ca.Cert }}
     rules:
       - operations: [ "CREATE", "UPDATE" ]
