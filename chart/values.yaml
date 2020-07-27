@@ -15,3 +15,5 @@ serviceAccount:
 
 service:
   type: ClusterIP
+
+namespaceSelector: ""

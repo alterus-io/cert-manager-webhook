@@ -179,7 +179,9 @@ func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.Admissi
 
 	availableAnnotations = objectMeta.GetAnnotations()
 
-	annotations := map[string]string{syncAnnotationKey: "true"}
+	namespaceSelector := GetEnv("NAMESPACE_SELECTOR", "")
+
+	annotations := map[string]string{syncAnnotationKey: namespaceSelector}
 	patchBytes, err := createPatch(availableAnnotations, annotations)
 	if err != nil {
 		return &v1beta1.AdmissionResponse{
