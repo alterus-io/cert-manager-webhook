@@ -108,7 +108,6 @@ func mutationRequired(ignoredList []string, metadata *metav1.ObjectMeta, secretT
 	if required {
 		if _, cm := annotations[certManagerAnnotationKey]; cm {
 			if _, origin := annotations[originAnnotationKey]; origin {
-				log.Print("Secret contains origin annotation. Not original. Skipping")
 				return false
 			}
 			return true
@@ -179,7 +178,9 @@ func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.Admissi
 
 	availableAnnotations = objectMeta.GetAnnotations()
 
-	namespaceSelector := GetEnv("NAMESPACE_SELECTOR", "")
+	namespaceSelector := GetEnv("NAMESPACE_SELECTOR", "true")
+
+	log.Printf("NAMESPACE_SELECTOR: %s", namespaceSelector)
 
 	annotations := map[string]string{syncAnnotationKey: namespaceSelector}
 	patchBytes, err := createPatch(availableAnnotations, annotations)
