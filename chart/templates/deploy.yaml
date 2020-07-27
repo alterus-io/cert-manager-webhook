@@ -18,6 +18,13 @@ spec:
         - name: cert-manager-secret-webhook
           image: {{ .Values.image.name }}:{{ .Values.image.tag }}
           imagePullPolicy: Always
+          env:
+            - name: "WEBHOOK_PORT"
+              value: "443"
+            - name: "WEBHOOK_CERT"
+              value: "/etc/webhook/certs/tls.crt"
+            - name: "WEBHOOK_KEY"
+              value: "/etc/webhook/certs/tls.key"
           volumeMounts:
             - name: webhook-certs
               mountPath: /etc/webhook/certs

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,23 +12,27 @@ import (
 	"github.com/golang/glog"
 )
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func main() {
-	var parameters WhSvrParameters
-
 	// get command line parameters
-	flag.IntVar(&parameters.port, "port", 443, "Webhook server port.")
-	flag.StringVar(&parameters.certFile, "tlsCertFile", "/etc/webhook/certs/tls.crt", "File containing the x509 Certificate for HTTPS.")
-	flag.StringVar(&parameters.keyFile, "tlsKeyFile", "/etc/webhook/certs/tls.crt", "File containing the x509 private key to --tlsCertFile.")
-	flag.Parse()
+	webhookPort := getEnv("WEBHOOK_PORT", "443")
+	certFile := getEnv("WEBHOOK_CERT", "/etc/webhook/certs/tls.crt")
+	keyFile := getEnv("WEBHOOK_KEY", "/etc/webhook/certs/tls.key")
 
-	pair, err := tls.LoadX509KeyPair(parameters.certFile, parameters.keyFile)
+	pair, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		glog.Errorf("Failed to load key pair: %v", err)
 	}
 
 	whsvr := &WebhookServer{
 		server: &http.Server{
-			Addr:      fmt.Sprintf(":%v", parameters.port),
+			Addr:      fmt.Sprintf(":%v", webhookPort),
 			TLSConfig: &tls.Config{Certificates: []tls.Certificate{pair}},
 		},
 	}
